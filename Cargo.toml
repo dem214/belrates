@@ -1,0 +1,8 @@
+[package]
+name = "belrates"
+version = "0.0.1"
+authors = ["Dzmitry Izaitka <dem214overlord@gmail.com"]
+
+[dependencies]
+hyper = "0.12.9"
+futures = "0.1.24"

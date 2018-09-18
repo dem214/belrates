@@ -3,7 +3,6 @@ extern crate belrates;
 use belrates::*;
 
 fn main() {
-    let responce = get_from_server(Currency::USD).unwrap();
-    let rate = Rate::from_string(responce);
-    println!("{}", rate.rate);
+    let usd_rate = Rate::from_server_today(&Currency::USD);
+    println!("Price of 1 {} is {}", usd_rate.name, usd_rate.act_rate());
 }

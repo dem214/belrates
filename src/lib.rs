@@ -15,11 +15,11 @@ const URL_RATES: &'static str = "http://www.nbrb.by/API/ExRates/Rates/";
 
 #[derive(Debug)]
 pub struct Rate {
-    id: u32,
-    date: String,
-    abbreviation: Currency,
-    scale: u32,
-    name: String,
+    pub id: u32,
+    pub date: String,
+    pub abbreviation: Currency,
+    pub scale: u32,
+    pub name: String,
     pub rate: f32,
 }
 
@@ -48,20 +48,65 @@ impl Rate {
 
         Rate{id, date, abbreviation, scale, name, rate}
     }
+    pub fn from_server_today(cur: &currency::Currency) -> Rate {
+        Rate::from_string(get_from_server(cur).unwrap())
+    }
+    ///Return actual rate that represent official rate devided by official currency scale of NBRB.
+    ///
+    /// `self.act_rate == self.rate / self.scale`
+    ///
+    ///That means a cost of 1 unit of the foreing currency in the belarusian roubles.
+    ///
+    ///# Example
+    ///
+    ///```
+    ///let some_rate = Rate {
+    ///    # id: 1,
+    ///    # date: "today".to_string(),
+    ///    # abbreviation: Currency::RUB,
+    ///    # name: "Рубль".to_string(),
+    ///    // snip..
+    ///    scale: 100,
+    ///    rate: 3.14,
+    ///};
+    ///
+    ///assert_eq!(some_rate.act_rate(), 0.0314)
+    ///```
+    pub fn act_rate(&self) -> f32 {
+        self.rate / self.scale as f32
+    }
 }
 
-pub fn get_from_server(cur: Currency) -> Result<String, String> {
-    if cur == Currency::BYN {
+pub fn get_from_server(cur: &currency::Currency) -> Result<String, String> {
+    //we can't get the rate of BYN in BYN, its a silly
+    if *cur == Currency::BYN {
         return Err("cannot get currency for BYN".to_string());
     }
-
-    let (sender, mut receiver) = mpsc::channel::<Chunk>(512);
     let url = format!("{}{}",URL_RATES, cur.get_id());
+    //send request to server
+    request(&url)
+}
+///Need `date` in ISO 8601 format like `"YYYY-MM-DD"`.
+pub fn date_get(cur: &currency::Currency, date: &str) -> Result<String, String> {
+    //we can't get the rate of BYN in BYN, its a silly
+    if *cur == Currency::BYN {
+        return Err("cannot get currency for BYN".to_string());
+    }
+    let url = format!("{}{}?onDate={}",URL_RATES, cur.get_id(), date);
+    //send request to server
+    request(&url)
+}
+
+fn request(url: &str) -> Result<String, String> {
+    //create a chanel to sending body of response from tokio runtime to main thread
+    let (sender, mut receiver) = mpsc::channel::<Chunk>(512);
+    //parsing url
     let url = url.parse::<hyper::Uri>().unwrap();
+    //packing sender
     let sender = Arc::new(Mutex::new(sender));
-
+    //start the tokio
     rt::run(fetch_url(url, sender));
-
+    //its seems we get some response, converting then to String
     if let Ok(Ready(Some(vals))) = receiver.poll() {
         Ok(String::from_utf8(vals.to_vec()).unwrap())
     }
@@ -72,7 +117,7 @@ pub fn get_from_server(cur: Currency) -> Result<String, String> {
 
 fn fetch_url(url: hyper::Uri, sender: Arc<Mutex<mpsc::Sender<Chunk>>>) -> impl Future<Item=(), Error=()> {
     let client = Client::new();
-
+    //some magic
     client
         .get(url)
         .and_then(move |res| {

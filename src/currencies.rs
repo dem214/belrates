@@ -1,36 +1,56 @@
-//!#currency
-//!
-//!'currency' contains a enumerator what represent the actual useful currencies for belarusian
-//!national economy and also some methods for working with this currencies.
-//!
-//!Supporting US Dollar (USD), Euro (EUR), Russian Rouble(RUB), Belarusian Rouble (BYN).
+//! Contains a enumerator with avaiable currencies.
 
-///Represent available currencies.
+/// Available currencies represents the actual useful currencies for belarusian
+/// national economy and also some methods for working with this currencies.
+/// Contains code of currencies by
+/// [ISO 4217](https://en.wikipedia.org/wiki/ISO_4217).
 #[derive(PartialEq, Debug)]
 pub enum Currency {
+    /// United States dollar
     USD,
+    /// Euro
     EUR,
+    /// Russian ruble
     RUB,
+    /// Belarusian ruble
     BYN,
+    /// British pound sterling
     GBT,
+    /// Ukrainian hryvnia
     UAH,
+    /// Polish zloty
     PLN,
+    /// Chinese yuan
     CNY,
+    /// Japanese yen
     JPY,
+    /// Kazakhstani tenge
     KZT,
+    /// Swiss franc
     CHF,
+    /// Canadian dollar
     CAD,
 }
 
 impl Currency {
-    ///Take a string what represent the currency and return exemplar of enum Currency.
+
+    /// Take a string what represent the currency and return exemplar of enum Currency.
     ///
-    ///Read the value only in uppercase format by ISO 4217 like ``"USD"``.
+    /// Read the value only in uppercase format by
+    /// [ISO 4217](https://en.wikipedia.org/wiki/ISO_4217)
+    /// like ``"USD"``.
     ///
-    ///# Errors
+    /// # Errors
     ///
-    ///Return err, if passed value in the lowercase or not represented by enum `Currency`.
+    /// Return `Err`, if passed value in the lowercase or not represented by enum `Currency`.
     ///
+    /// # Examples
+    /// ```
+    /// # use belrates::*;
+    /// let usd = Currency::from_str("USD").unwrap();
+    ///
+    /// assert_eq!(usd, Currency::USD);
+    /// ```
     pub fn from_str(name: &str) -> Result<Currency, String> {
         match name {
             "USD" => Ok(Currency::USD),
@@ -48,13 +68,22 @@ impl Currency {
             s => Err(format!("mismatching currency {}, check definition of enum Currency", s)),
         }
     }
-    ///Returning value of internal ID of currency used in API of
-    ///National Bank of Republic of Belarus site.
+
+    /// Returning value of internal ID of currency used in API of
+    /// National Bank of Republic of Belarus site.
     ///
-    ///# Warning
+    /// # Warning
     ///
-    ///Return 0 for `Currency::BYN`, what is not the official API of NBRB site.
+    /// Return `0` for `Currency::BYN`, what is not the official API of NBRB site.
     ///
+    /// # Examples
+    ///
+    /// ```
+    /// # use belrates::*;
+    /// let usd_id: u16 = Currency::USD.get_id();
+    ///
+    /// assert_eq!(usd_id, 145);
+    /// ```
     pub fn get_id(&self) -> u16 {
         match self {
             Currency::USD => 145,

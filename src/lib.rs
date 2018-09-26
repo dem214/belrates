@@ -102,7 +102,7 @@ impl Rate {
     /// today exchange rate.
     ///
     /// # Examples
-    /// ```
+    /// ```no_run
     /// # use belrates::*;
     /// let rate = Rate::from_server_today(&Currency::USD).unwrap();
     /// ```
@@ -118,7 +118,7 @@ impl Rate {
     ///Need `date` in ISO 8601 format like `"YYYY-MM-DD"`.
     ///
     /// # Examples
-    /// ```
+    /// ```no_run
     /// # use belrates::*;
     /// let rate = Rate::from_server_date(&Currency::USD, "2018-04-20").unwrap();
     /// ```
@@ -166,7 +166,7 @@ impl Rate {
 /// Return `Err<String>` if you put `Currency::BYN` in `cur` param.
 ///
 /// # Examples
-/// ```
+/// ```ignore
 /// # use belrates::*;
 /// let json = get_from_server(&Currency::USD).unwrap();
 /// ```
@@ -189,7 +189,7 @@ fn get_from_server(cur: &Currency) -> Result<String, String> {
 /// Return `Err<String>` if you put `Currency::BYN` in `cur` param.
 ///
 /// # Examples
-/// ```
+/// ```ignore
 /// # use belrates::*;
 /// let json = date_get(&Currency::USD, "2018-04-20").unwrap();
 /// ```

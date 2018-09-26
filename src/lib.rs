@@ -5,15 +5,10 @@
 //! [nbrb.by](http://www.nbrb.by).
 //!
 
-extern crate hyper;
-extern crate futures;
+extern crate reqwest;
 
-use std::sync::{Mutex, Arc};
 use std::u32;
-use hyper::{Client, StatusCode};
-use hyper::rt::{self, Future, Stream};
-use futures::sync::mpsc;
-use futures::Async::Ready;
+use reqwest::StatusCode;
 
 pub mod currencies;
 
@@ -175,7 +170,7 @@ impl Rate {
 /// # use belrates::*;
 /// let json = get_from_server(&Currency::USD).unwrap();
 /// ```
-pub fn get_from_server(cur: &Currency) -> Result<String, String> {
+fn get_from_server(cur: &Currency) -> Result<String, String> {
     //we can't get the rate of BYN in BYN, its a silly
     if *cur == Currency::BYN {
         return Err("cannot get currency for BYN".to_string());
@@ -198,7 +193,7 @@ pub fn get_from_server(cur: &Currency) -> Result<String, String> {
 /// # use belrates::*;
 /// let json = date_get(&Currency::USD, "2018-04-20").unwrap();
 /// ```
-pub fn date_get(cur: &Currency, date: &str) -> Result<String, String> {
+fn date_get(cur: &Currency, date: &str) -> Result<String, String> {
     //we can't get the rate of BYN in BYN, that's a silly
     if *cur == Currency::BYN {
         return Err("cannot get currency for BYN".to_string());
@@ -209,48 +204,17 @@ pub fn date_get(cur: &Currency, date: &str) -> Result<String, String> {
 }
 
 fn request(url: &str) -> Result<String, String> {
-    //create a chanel to sending body of response from tokio runtime to main thread
-    let (sender, mut receiver) = mpsc::channel::<String>(512);
-    //parsing url
-    let url = url.parse::<hyper::Uri>().unwrap();
-    //packing sender
-    let sender = Arc::new(Mutex::new(sender));
-    //start the tokio
-    rt::run(fetch_url(url, sender));
-    //its seems we get some response, converting then to String
-    if let Ok(Ready(Some(vals))) = receiver.poll() {
-        if vals.starts_with("404") {
-            Err("got 404".to_string())
-        } else {
-            Ok(vals)
-        }
+    let res = reqwest::get(url);
+    let mut res = match res {
+        Ok(val) => val,
+        Err(_) => return Err("cannot get data from server".to_string()),
+    };
+    //handling 404
+    if res.status() == StatusCode::NOT_FOUND {
+        return Err("got 404".to_string())
     }
-    else {
-        Err("invalid receiving".to_string())
+    match res.text() {
+        Ok(val) => Ok(val),
+        Err(_) => Err("cannot get from body".to_string())
     }
-}
-
-fn fetch_url(url: hyper::Uri, sender: Arc<Mutex<mpsc::Sender<String>>>)
-                            -> impl Future<Item=(), Error=()> {
-    let client = Client::new();
-    //some magic
-    client
-        .get(url)
-        .and_then(move |res| {
-            if res.status() == StatusCode::NOT_FOUND {
-                eprintln!("got 404");
-                let mut paniker = sender.lock().unwrap();
-                paniker.try_send("404".to_string()).unwrap()
-                //FIXME можно попробовать передать сам статускод есть возможность передать только
-                //в данной ветви
-            }
-            res.into_body().for_each(move |chunk| {
-                let mut sender = sender.lock().unwrap();
-                sender.try_send(String::from_utf8(chunk.to_vec()).unwrap())
-                    .map_err(|e| panic!("expecting channnel is open, error={}", e))
-            })
-        })
-        .map_err(|err| {
-            eprintln!("error {}", err);
-        })
 }

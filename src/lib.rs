@@ -5,15 +5,13 @@
 //! [nbrb.by](http://www.nbrb.by).
 //!
 
-extern crate reqwest;
-
 use std::u32;
 use reqwest::StatusCode;
 
 pub mod currencies;
 
 #[doc(inline)]
-pub use currencies::Currency;
+pub use crate::currencies::Currency;
 
 // URL of `nbrb.com` server API
 const URL_RATES: &'static str = "http://www.nbrb.by/API/ExRates/Rates/";

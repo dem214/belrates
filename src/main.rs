@@ -1,4 +1,3 @@
-extern crate belrates;
 use belrates::Rate;
 use belrates::Currency;
 

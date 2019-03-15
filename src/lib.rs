@@ -57,7 +57,7 @@ impl Rate {
     /// assert_eq!(resp_rate, ex_rate);
     /// ```
     pub fn from_string(s: String) -> Result<Rate, String> {
-        let s = s.trim_left_matches('{').trim_right_matches('}');
+        let s = s.trim_start_matches('{').trim_end_matches('}');
         let table: Vec<&str> = s.split(',').collect();
 
         let row: Vec<&str> = table[0].splitn(2, ':').collect();
